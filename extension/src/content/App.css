@@ -15,10 +15,10 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 440px;
+  width: calc(400px * var(--grid-scale-factor, 1));
   background: var(--bg-color);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(var(--bg-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--bg-blur, 16px));
   border: 1px solid var(--border-color);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -32,12 +32,17 @@
 
 /* Phase 8 Modes */
 .poly-baccarat-container.compact-mode {
-  width: 140px !important;
+  width: calc(90px * var(--grid-scale-factor, 1)) !important;
   opacity: 0.9 !important;
 }
 
 .poly-baccarat-container.expanded-mode {
-  width: 440px !important;
+  width: calc(400px * var(--grid-scale-factor, 1)) !important;
+}
+
+/* Force Usable Width when Settings are Open in Compact Mode */
+.poly-baccarat-container.compact-mode.settings-open {
+  width: 360px !important;
 }
 
 /* Sidebar Mode Overrides */
@@ -76,18 +81,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.05);
   border-bottom: 1px solid var(--border-color);
+  gap: 8px;
 }
 
 .header-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .board-section {
@@ -105,10 +114,12 @@
 /* Scrollbar styling */
 .grid-container::-webkit-scrollbar {
   height: 6px;
+  background: rgba(128, 128, 128, 0.1);
 }
 
 .grid-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--text-primary);
+  opacity: 0.3;
   border-radius: 3px;
 }
 
@@ -201,9 +212,9 @@
 
 .tooltip {
   font-size: 12px;
-  background: rgba(59, 130, 246, 0.2);
-  border: 1px solid var(--blue-color);
-  color: #fff;
+  background: var(--text-inverse, rgba(59, 130, 246, 0.2));
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 8px 12px;
   border-radius: 8px;
   margin-bottom: 12px;
@@ -212,24 +223,29 @@
 .btn-close {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  opacity: 0.6;
   cursor: pointer;
   font-size: 20px;
   line-height: 1;
 }
 
-.btn-icon {
+.btn-icon,
+.btn-close {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  opacity: 0.6;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 4px;
+  flex-shrink: 0;
+  min-width: 24px;
 }
 
 .btn-close:hover,
 .btn-icon:hover {
-  color: #fff;
+  opacity: 1;
 }

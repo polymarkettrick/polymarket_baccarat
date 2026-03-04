@@ -8,6 +8,8 @@ const Popup = () => {
   const [yesColor, setYesColor] = useState('#3b82f6');
   const [noColor, setNoColor] = useState('#ef4444');
   const [uiScale, setUiScale] = useState(100);
+  const [bgColor, setBgColor] = useState('#121216');
+  const [bgOpacity, setBgOpacity] = useState(85);
 
   useEffect(() => {
     // Attempt real supabase auth, ignore errors if dummy
@@ -16,11 +18,13 @@ const Popup = () => {
       setUser(session?.user);
     });
 
-    chrome.storage.local.get(['polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale'], (res) => {
+    chrome.storage.local.get(['polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale', 'polyBgColor', 'polyBgOpacity'], (res) => {
       setIsBoardVisible(Boolean(res.polyIsVisible));
       if (res.polyYesColor) setYesColor(String(res.polyYesColor));
       if (res.polyNoColor) setNoColor(String(res.polyNoColor));
       if (res.polyUiScale) setUiScale(Number(res.polyUiScale));
+      if (res.polyBgColor) setBgColor(String(res.polyBgColor));
+      if (res.polyBgOpacity !== undefined) setBgOpacity(Number(res.polyBgOpacity));
     });
 
     return () => authListener.subscription.unsubscribe();
@@ -99,7 +103,29 @@ const Popup = () => {
         </label>
       </div>
 
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        <label style={{ flex: 1, fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          Background Color
+          <input type="color" value={bgColor} onChange={(e) => { setBgColor(e.target.value); updateSetting('polyBgColor', e.target.value); }} style={{ width: '100%' }} />
+        </label>
+      </div>
+
       <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+        Background Opacity: {bgOpacity}%
+        <input
+          type="range"
+          min="10" max="100" step="5"
+          value={bgOpacity}
+          onChange={(e) => {
+            const val = parseInt(e.target.value);
+            setBgOpacity(val);
+            updateSetting('polyBgOpacity', val);
+          }}
+          style={{ width: '100%' }}
+        />
+      </label>
+
+      <label style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
         UI Scale: {uiScale}%
         <input
           type="range"
