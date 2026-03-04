@@ -1,0 +1,39 @@
+{
+    "manifest_version": 3,
+    "name": "Polymarket Baccarat Board",
+    "version": "1.0.0",
+    "description": "Historical trend analysis using Baccarat boards for Polymarket.",
+    "permissions": [
+        "storage",
+        "webNavigation",
+        "scripting"
+    ],
+    "host_permissions": [
+        "*://*.polymarket.com/*",
+        "*://polymarket.com/*"
+    ],
+    "externally_connectable": {
+        "matches": [
+            "*://localhost/*",
+            "https://*.yourproductiondomain.com/*"
+        ]
+    },
+    "background": {
+        "service_worker": "src/background/index.ts",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://*.polymarket.com/*",
+                "*://polymarket.com/*"
+            ],
+            "js": [
+                "src/content/index.tsx"
+            ]
+        }
+    ],
+    "action": {
+        "default_popup": "index.html"
+    }
+}

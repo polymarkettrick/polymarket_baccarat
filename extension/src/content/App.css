@@ -1,0 +1,235 @@
+:host {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --bg-color: rgba(18, 18, 22, 0.85);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --text-primary: #ffffff;
+  --text-secondary: #9ba1a6;
+  --blue-color: #3b82f6;
+  /* YES */
+  --red-color: #ef4444;
+  /* NO */
+  --accent-gold: #f59e0b;
+}
+
+.poly-baccarat-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 440px;
+  background: var(--bg-color);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  color: var(--text-primary);
+  z-index: 1000;
+  /* Lower than Polymarket Top Nav */
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  /* Removed transform transition to prevent stuttering while dragging */
+}
+
+/* Phase 8 Modes */
+.poly-baccarat-container.compact-mode {
+  width: 140px !important;
+  opacity: 0.9 !important;
+}
+
+.poly-baccarat-container.expanded-mode {
+  width: 440px !important;
+}
+
+/* Sidebar Mode Overrides */
+.poly-baccarat-container.sidebar-mode {
+  top: 60px !important;
+  /* Leave room for top nav */
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  height: calc(100vh - 60px) !important;
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  transform-origin: right top;
+}
+
+.poly-baccarat-container.sidebar-mode.minimized {
+  transform: translateX(calc(100% - 40px)) !important;
+  opacity: 0.9 !important;
+  cursor: pointer;
+}
+
+/* Floating Mode specific minimized transition */
+.poly-baccarat-container.floating-mode.minimized {
+  transform: scale(0.9) translateY(20px);
+  opacity: 0.8;
+  height: 60px;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.board-section {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grid-container {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+/* Scrollbar styling */
+.grid-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.grid-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.grid {
+  display: inline-grid;
+  grid-template-rows: repeat(6, calc(20px * var(--grid-scale-factor, 1)));
+  grid-auto-flow: column;
+  gap: 2px;
+}
+
+.cell {
+  width: calc(20px * var(--grid-scale-factor, 1));
+  height: calc(20px * var(--grid-scale-factor, 1));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Bead Plate (Solid) */
+.cell.solid-yes {
+  background-color: var(--blue-color);
+}
+
+.cell.solid-no {
+  background-color: var(--red-color);
+}
+
+/* Big Road (Hollow) */
+.cell.hollow-yes {
+  border: 2px solid var(--blue-color);
+  box-sizing: border-box;
+}
+
+.cell.hollow-no {
+  border: 2px solid var(--red-color);
+  box-sizing: border-box;
+}
+
+.cell.empty {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  /* Subtle grid line */
+}
+
+/* Stats */
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--blue-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tooltip {
+  font-size: 12px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid var(--blue-color);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.btn-close:hover,
+.btn-icon:hover {
+  color: #fff;
+}
