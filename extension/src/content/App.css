@@ -15,7 +15,9 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: calc(400px * var(--grid-scale-factor, 1));
+  width: calc(600px * var(--grid-scale-factor, 1));
+  min-width: 100px;
+  max-width: 600px;
   background: var(--bg-color);
   backdrop-filter: blur(var(--bg-blur, 16px));
   -webkit-backdrop-filter: blur(var(--bg-blur, 16px));
@@ -24,20 +26,29 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   color: var(--text-primary);
   z-index: 1000;
-  /* Lower than Polymarket Top Nav */
   overflow: hidden;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-  /* Removed transform transition to prevent stuttering while dragging */
+  /* Lower than Polymarket Top Nav */
 }
 
 /* Phase 8 Modes */
 .poly-baccarat-container.compact-mode {
-  width: calc(90px * var(--grid-scale-factor, 1)) !important;
+  width: calc(100px * var(--grid-scale-factor, 1)) !important;
+  min-width: 100px !important;
+  max-width: 600px !important;
   opacity: 0.9 !important;
 }
 
+/* Cleanup for Compact Width dynamically using Container Queries */
+.poly-baccarat-container.compact-mode .header-title {
+  /* We preserve the title text in compact mode so it remains visible */
+}
+
+
+
 .poly-baccarat-container.expanded-mode {
-  width: calc(400px * var(--grid-scale-factor, 1)) !important;
+  width: calc(600px * var(--grid-scale-factor, 1)) !important;
+  min-width: 100px !important;
+  max-width: 600px !important;
 }
 
 /* Force Usable Width when Settings are Open in Compact Mode */
@@ -47,12 +58,11 @@
 
 /* Sidebar Mode Overrides */
 .poly-baccarat-container.sidebar-mode {
-  top: 60px !important;
-  /* Leave room for top nav */
+  top: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
   left: auto !important;
-  height: calc(100vh - 60px) !important;
+  height: 100vh !important;
   border-radius: 0;
   border-top: none;
   border-bottom: none;
@@ -88,7 +98,7 @@
 }
 
 .header-title {
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale-factor, 1));
   font-weight: 600;
   letter-spacing: 0.5px;
   display: flex;
@@ -164,28 +174,65 @@
   /* Subtle grid line */
 }
 
-/* Stats */
-.stats-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--text-secondary);
-  border-top: 1px solid var(--border-color);
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.2);
+/* Stats using User Provided CSS Container Queries */
+.hud-container-wrapper {
+  container-type: inline-size;
+  container-name: hudPanel;
+  width: 100%;
 }
 
-.stat-item {
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.2);
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+}
+
+.stat-block {
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: calc(11px * var(--text-scale-factor, 1));
+  color: var(--text-primary);
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale-factor, 1));
   font-weight: 700;
   color: var(--text-primary);
-  margin-top: 4px;
+}
+
+@container hudPanel (max-width: 260px) {
+  .stats-container {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .stat-block {
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .stat-block:last-child {
+    border-bottom: none;
+  }
 }
 
 .loader-container {
@@ -226,7 +273,7 @@
   color: var(--text-primary);
   opacity: 0.6;
   cursor: pointer;
-  font-size: 20px;
+  font-size: calc(20px * var(--text-scale-factor, 1));
   line-height: 1;
 }
 
@@ -240,9 +287,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: calc(4px * var(--text-scale-factor, 1));
   flex-shrink: 0;
-  min-width: 24px;
+  min-width: calc(24px * var(--text-scale-factor, 1));
+}
+
+.btn-icon svg {
+  transform: scale(var(--text-scale-factor, 1));
 }
 
 .btn-close:hover,

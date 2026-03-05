@@ -36,7 +36,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
     useEffect(() => {
         // Only apply shift if the sidebar is open and NOT minimized
         if (layoutMode === 'sidebar' && !minimized) {
-            const shiftWidth = isExpanded ? '400px' : '90px';
+            const shiftWidth = isExpanded ? `calc(600px * ${uiScale / 100})` : `calc(100px * ${uiScale / 100})`;
             document.documentElement.style.marginRight = shiftWidth;
             document.documentElement.style.transition = 'margin-right 0.3s ease';
         } else {
@@ -129,7 +129,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
             // Bound inside window
             let newX = e.clientX - dragOffset.x;
             let newY = e.clientY - dragOffset.y;
-            const containerWidth = 400; // Fixed width for floating
+            const containerWidth = isExpanded ? 600 * (uiScale / 100) : 100 * (uiScale / 100);
 
             if (newX < 0) newX = 0;
             if (newX + containerWidth > window.innerWidth) newX = window.innerWidth - containerWidth;
@@ -199,6 +199,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
         '--text-secondary': contrast.secondary,
         '--text-inverse': contrast.inversePrimary,
         '--grid-scale-factor': (uiScale / 100).toString(),
+        '--text-scale-factor': Math.max(0.7, uiScale / 100).toString(),
     } as any;
 
     const updateSetting = (key: string, value: any) => {
@@ -270,7 +271,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                     {layoutMode === 'floating' && (
                         <button
                             onClick={() => {
-                                const resetPos = { x: window.innerWidth - 424, y: window.innerHeight - 340 };
+                                const resetPos = { x: window.innerWidth - (isExpanded ? 624 : 124), y: window.innerHeight - 340 };
                                 setPosition(resetPos);
                                 updateSetting('polyPosition', resetPos);
                             }}
@@ -286,6 +287,13 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                         Solid {labels[1] || 'Down'} = {labels[1] || 'Down'} streak.<br />
                         Hollow circles map to continuous streaks on the Big Road.
                     </div>
+
+                    <button
+                        onClick={() => setShowSettings(false)}
+                        style={{ background: contrast.primary, color: contrast.inversePrimary, border: 'none', padding: '12px', borderRadius: '6px', cursor: 'pointer', marginTop: '10px', fontWeight: 'bold', fontSize: '14px' }}
+                    >
+                        Confirm & Close Settings
+                    </button>
                 </div>
             )}
 

@@ -18,7 +18,7 @@ export const BeadPlate: React.FC<BeadPlateProps> = ({ board, labels = ["Yes", "N
 
     return (
         <div>
-            <div style={{ fontSize: '13px', color: '#9ba1a6', marginBottom: '8px' }}>Bead Plate</div>
+            <div style={{ fontSize: 'calc(13px * var(--text-scale-factor, 1))', color: 'var(--text-primary)', opacity: 0.8, marginBottom: '8px' }}>Bead Plate</div>
             <div className="grid-container">
                 <div className="grid">
                     {Array.from({ length: columns }).map((_, i) => {

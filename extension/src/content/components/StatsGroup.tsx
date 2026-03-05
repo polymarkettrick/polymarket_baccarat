@@ -13,18 +13,20 @@ export const StatsGroup: React.FC<StatsProps> = ({ currentStreak, longestStreak,
     const index0Label = labels.length > 0 ? labels[0].toUpperCase() : 'YES';
 
     return (
-        <div className="stats-row">
-            <div className="stat-item">
-                <span>{formattedTimeframe} Trend</span>
-                <span className="stat-value">{currentStreak} Streak</span>
-            </div>
-            <div className="stat-item">
-                <span>Max Streak</span>
-                <span className="stat-value">{longestStreak}</span>
-            </div>
-            <div className="stat-item">
-                <span>{index0Label} %</span>
-                <span className="stat-value">{(yesPercentage * 100).toFixed(1)}%</span>
+        <div className="hud-container-wrapper">
+            <div className="stats-container">
+                <div className="stat-block">
+                    <span className="stat-label">{formattedTimeframe} Trend</span>
+                    <span className="stat-value">{currentStreak} Streak</span>
+                </div>
+                <div className="stat-block">
+                    <span className="stat-label">Max Streak</span>
+                    <span className="stat-value">{longestStreak}</span>
+                </div>
+                <div className="stat-block">
+                    <span className="stat-label">{index0Label} %</span>
+                    <span className="stat-value">{(yesPercentage * 100).toFixed(1)}%</span>
+                </div>
             </div>
         </div>
     );

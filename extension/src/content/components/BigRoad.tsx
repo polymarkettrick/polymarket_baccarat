@@ -24,7 +24,7 @@ export const BigRoad: React.FC<BigRoadProps> = ({ board, labels = ["Yes", "No"],
 
     return (
         <div>
-            <div style={{ fontSize: '13px', color: '#9ba1a6', marginBottom: '8px' }}>Big Road</div>
+            <div style={{ fontSize: 'calc(13px * var(--text-scale-factor, 1))', color: 'var(--text-primary)', opacity: 0.8, marginBottom: '8px' }}>Big Road</div>
             <div className="grid-container">
                 <div className="grid">
                     {Array.from({ length: displayCols }).map((_, i) => {
