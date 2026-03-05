@@ -128,16 +128,13 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
             if (!isDragging || layoutMode === 'sidebar') return;
             // Bound inside window
             let newX = e.clientX - dragOffset.x;
-            let newY = e.clientY - dragOffset.y;
             const containerWidth = isExpanded ? 600 * (uiScale / 100) : 100 * (uiScale / 100);
 
             if (newX < 0) newX = 0;
             if (newX + containerWidth > window.innerWidth) newX = window.innerWidth - containerWidth;
-            if (newY < 0) newY = 0;
-            // Give some buffer for bottom
-            if (newY + 60 > window.innerHeight) newY = window.innerHeight - 60;
 
-            setPosition({ x: newX, y: newY });
+            // Y is locked to 0 since floating is now 100vh
+            setPosition({ x: newX, y: 0 });
         };
 
         const handleMouseUp = () => {
@@ -187,9 +184,16 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
 
     const contrast = getContrastYIQ(bgColor);
 
+    const getGridScale = () => {
+        const baseScale = uiScale / 100;
+        return uiScale > 100 ? baseScale * 0.75 : baseScale;
+    };
+
+    const actualGridScale = getGridScale();
+
     const inlineStyles: React.CSSProperties = {
         ...(layoutMode === 'floating'
-            ? { left: `${position.x}px`, top: `${position.y}px`, bottom: 'auto', right: 'auto' }
+            ? { left: `${position.x}px`, top: '0px', bottom: '0px', right: 'auto', height: '100vh' }
             : {}),
         '--blue-color': yesColor,
         '--red-color': noColor,
@@ -198,8 +202,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
         '--text-primary': contrast.primary,
         '--text-secondary': contrast.secondary,
         '--text-inverse': contrast.inversePrimary,
-        '--grid-scale-factor': (uiScale / 100).toString(),
-        '--text-scale-factor': Math.max(0.7, uiScale / 100).toString(),
+        '--grid-scale-factor': actualGridScale.toString(),
+        '--text-scale-factor': Math.max(0.7, actualGridScale).toString(),
     } as any;
 
     const updateSetting = (key: string, value: any) => {
@@ -304,7 +308,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                     {error && <ErrorState message={error} />}
 
                     {!loading && !error && stats && (
-                        <>
+                        <div className="top-half-content">
                             <div className="board-section">
                                 <BeadPlate board={stats.beadPlate} labels={labels} maxCols={isExpanded ? 30 : 6} />
                                 <BigRoad board={stats.bigRoad} labels={labels} maxCols={isExpanded ? 30 : 6} />
@@ -316,7 +320,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                                 timeframe={timeframe}
                                 labels={labels}
                             />
-                        </>
+                        </div>
                     )}
                 </>
             )}

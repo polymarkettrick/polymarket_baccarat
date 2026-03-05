@@ -1,7 +1,7 @@
 :host {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --bg-color: rgba(18, 18, 22, 0.85);
-  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color: rgba(128, 128, 128, 0.2);
   --text-primary: #ffffff;
   --text-secondary: #9ba1a6;
   --blue-color: #3b82f6;
@@ -26,8 +26,10 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   color: var(--text-primary);
   z-index: 1000;
-  overflow: hidden;
-  /* Lower than Polymarket Top Nav */
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Phase 8 Modes */
@@ -37,13 +39,6 @@
   max-width: 600px !important;
   opacity: 0.9 !important;
 }
-
-/* Cleanup for Compact Width dynamically using Container Queries */
-.poly-baccarat-container.compact-mode .header-title {
-  /* We preserve the title text in compact mode so it remains visible */
-}
-
-
 
 .poly-baccarat-container.expanded-mode {
   width: calc(600px * var(--grid-scale-factor, 1)) !important;
@@ -92,7 +87,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid var(--border-color);
   gap: 8px;
 }
@@ -110,15 +105,19 @@
 }
 
 .board-section {
-  padding: 16px;
+  padding: 12px 16px;
+  margin: 12px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .grid-container {
   overflow-x: auto;
-  padding-bottom: 8px;
+  overflow-y: hidden;
+  padding-bottom: 4px;
 }
 
 /* Scrollbar styling */
@@ -135,14 +134,19 @@
 
 .grid {
   display: inline-grid;
-  grid-template-rows: repeat(6, calc(20px * var(--grid-scale-factor, 1)));
+  /* 
+    The wrapper is 50vh. We have two grids (Bead + BigRoad) + Stats + Padding. 
+    Total rows = 12. We allocate ~2.5vh per cell to ensure everything fits 
+    without triggering a vertical scrollbar. 
+  */
+  grid-template-rows: repeat(6, calc(2.3vh * var(--grid-scale-factor, 1)));
   grid-auto-flow: column;
   gap: 2px;
 }
 
 .cell {
-  width: calc(20px * var(--grid-scale-factor, 1));
-  height: calc(20px * var(--grid-scale-factor, 1));
+  width: calc(2.3vh * var(--grid-scale-factor, 1));
+  height: calc(2.3vh * var(--grid-scale-factor, 1));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -170,7 +174,7 @@
 }
 
 .cell.empty {
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
   /* Subtle grid line */
 }
 
@@ -227,7 +231,7 @@
     justify-content: center;
     width: 100%;
     padding: 6px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
   }
 
   .stat-block:last-child {
@@ -245,7 +249,7 @@
 .spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--border-color);
   border-top-color: var(--blue-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -294,6 +298,17 @@
 
 .btn-icon svg {
   transform: scale(var(--text-scale-factor, 1));
+}
+
+.top-half-content {
+  height: 50vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.1);
+  /* visual boundary for future widgets */
 }
 
 .btn-close:hover,
