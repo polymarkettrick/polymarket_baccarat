@@ -184,31 +184,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
 
     const contrast = getContrastYIQ(bgColor);
 
-    // Fix scaling discontinuity and separate text vs grid logic
-    const getScaleFactors = () => {
-        const baseScale = uiScale / 100;
-
-        // Before 100%, everything is 1:1. 
-        if (uiScale <= 100) {
-            return { grid: baseScale, text: baseScale };
-        }
-
-        // After 100%, the user wants the grid to scale up but slower.
-        // We calculate the 'excess' scale and apply a deduction multiplier to that excess.
-        // E.g., at 110%, the excess is 0.10.
-        const excess = baseScale - 1.0;
-
-        // Grid: 25% slower growth past 100% (multiplier 0.75)
-        // This ensures at 100% it is 1.0, and at 110% it smoothly goes to 1.0 + (0.10 * 0.75) = 1.075
-        const continuousGridScale = 1.0 + (excess * 0.75);
-
-        // Text: 30% slower growth past 100% per user request
-        const continuousTextScale = 1.0 + (excess * 0.70);
-
-        return { grid: continuousGridScale, text: continuousTextScale };
-    };
-
-    const scaleFactors = getScaleFactors();
+    // Scale logic is now capped at 100%
+    const baseScale = uiScale / 100;
 
     const inlineStyles: React.CSSProperties = {
         ...(layoutMode === 'floating'
@@ -221,8 +198,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
         '--text-primary': contrast.primary,
         '--text-secondary': contrast.secondary,
         '--text-inverse': contrast.inversePrimary,
-        '--grid-scale-factor': scaleFactors.grid.toString(),
-        '--text-scale-factor': Math.max(0.7, scaleFactors.text).toString(),
+        '--grid-scale-factor': baseScale.toString(),
+        '--text-scale-factor': Math.max(0.7, baseScale).toString(),
     } as any;
 
     const updateSetting = (key: string, value: any) => {
@@ -288,7 +265,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
 
                     <label style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         Grid Scale: {uiScale}%
-                        <input type="range" min="40" max="120" step="10" value={uiScale} onChange={(e) => { setUiScale(parseInt(e.target.value)); updateSetting('polyUiScale', parseInt(e.target.value)); }} style={{ width: '100%', marginTop: '8px' }} />
+                        <input type="range" min="40" max="100" step="10" value={uiScale} onChange={(e) => { setUiScale(parseInt(e.target.value)); updateSetting('polyUiScale', parseInt(e.target.value)); }} style={{ width: '100%', marginTop: '8px' }} />
                     </label>
 
                     {layoutMode === 'floating' && (
