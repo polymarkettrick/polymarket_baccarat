@@ -36,6 +36,15 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 
+// 2. Extension Icon Click (Toggle Board natively)
+chrome.action.onClicked.addListener((tab) => {
+    if (tab.id) {
+        chrome.storage.local.get(['polyBoardEnabled'], (res) => {
+            const nextState = !res.polyBoardEnabled;
+            chrome.storage.local.set({ polyBoardEnabled: nextState });
+        });
+    }
+});
 
 // 4. The "Magic Upgrade" Listener (Stripe Webhook Success)
 // Reacts when the Web App successfully finishes a Stripe Checkout and redirects home

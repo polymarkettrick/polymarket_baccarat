@@ -11,10 +11,5 @@ export default defineConfig({
   build: {
     // Ensuring CSS is outputted correctly to be read by the Shadow root script if necessary
     cssCodeSplit: false,
-    rollupOptions: {
-      input: {
-        popup: 'index.html',
-      }
-    }
   }
 });

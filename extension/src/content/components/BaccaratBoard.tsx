@@ -19,6 +19,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     const [layoutMode, setLayoutMode] = useState<'floating' | 'sidebar'>('floating');
     const [isExpanded, setIsExpanded] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [isBoardEnabled, setIsBoardEnabled] = useState(false);
 
     // Auth & Credit States
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -68,8 +69,9 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     // Persist and load layout mode & settings
     useEffect(() => {
         if (typeof chrome !== 'undefined' && chrome.storage) {
-            chrome.storage.local.get(['polyLayoutMode', 'polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale', 'polyBgColor', 'polyBgOpacity', 'polyPosition'], (res) => {
+            chrome.storage.local.get(['polyLayoutMode', 'polyBoardEnabled', 'polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale', 'polyBgColor', 'polyBgOpacity', 'polyPosition'], (res) => {
                 if (res.polyLayoutMode) setLayoutMode(res.polyLayoutMode as 'floating' | 'sidebar');
+                if (res.polyBoardEnabled !== undefined) setIsBoardEnabled(Boolean(res.polyBoardEnabled));
                 if (res.polyIsVisible !== undefined) setIsExpanded(Boolean(res.polyIsVisible));
                 if (res.polyYesColor) setYesColor(String(res.polyYesColor));
                 if (res.polyNoColor) setNoColor(String(res.polyNoColor));
@@ -85,6 +87,9 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     useEffect(() => {
         const handleStorageChange = (changes: any, areaName: string) => {
             if (areaName === 'local') {
+                if (changes.polyBoardEnabled !== undefined) {
+                    setIsBoardEnabled(Boolean(changes.polyBoardEnabled.newValue));
+                }
                 if (changes.polyLayoutMode !== undefined) {
                     setLayoutMode(changes.polyLayoutMode.newValue);
                     setMinimized(false);
@@ -315,6 +320,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
         }
     };
 
+    if (!isBoardEnabled) return null;
+
     return (
         <div
             ref={containerRef}
@@ -356,7 +363,12 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /></svg>
                         )}
                     </button>
-                    <button className="btn-close" onClick={(e) => { e.stopPropagation(); setMinimized(!minimized); }}>{minimized ? '+' : '-'}</button>
+                    <button className="btn-icon" onClick={(e) => { e.stopPropagation(); setMinimized(!minimized); }} title="Minimize">
+                        {minimized ? '+' : '-'}
+                    </button>
+                    <button className="btn-close" onClick={(e) => { e.stopPropagation(); chrome.storage.local.set({ polyBoardEnabled: false }); }} title="Close Board">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                 </div>
             </div>
 
