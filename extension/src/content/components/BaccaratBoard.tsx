@@ -23,7 +23,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
 
     // Auth & Credit States
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState<'login' | 'signup' | null>(null);
     const [credits, setCredits] = useState(10);
     const [userEmail, setUserEmail] = useState('');
     const [lastActive, setLastActive] = useState(Date.now());
@@ -419,8 +419,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                                 <span style={{ opacity: 0.8 }}>Log in to access 50-period history and AI predictions.</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <button onClick={() => setShowAuthModal(true)} style={{ background: 'transparent', border: `1px solid ${contrast.secondary}`, color: contrast.primary, fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px' }}>Log In</button>
-                                <button onClick={() => setShowAuthModal(true)} style={{ background: 'var(--blue-color)', border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px' }}>Sign Up</button>
+                                <button onClick={() => setShowAuthModal('login')} style={{ background: 'transparent', border: `1px solid ${contrast.secondary}`, color: contrast.primary, fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px' }}>Log In</button>
+                                <button onClick={() => setShowAuthModal('signup')} style={{ background: 'var(--blue-color)', border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px' }}>Sign Up</button>
                             </div>
                         </>
                     )}
@@ -429,8 +429,9 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
 
             {showAuthModal && (
                 <AuthModal
-                    onClose={() => setShowAuthModal(false)}
-                    onSuccess={(email) => { setUserEmail(email); setIsAuthenticated(true); setShowAuthModal(false); }}
+                    initialMode={showAuthModal}
+                    onClose={() => setShowAuthModal(null)}
+                    onSuccess={(email) => { setUserEmail(email); setIsAuthenticated(true); setShowAuthModal(null); }}
                     contrast={contrast}
                     blueColor={yesColor}
                 />

@@ -6,10 +6,11 @@ interface AuthModalProps {
     onSuccess: (email: string) => void;
     contrast: { primary: string; secondary: string; inversePrimary: string };
     blueColor: string;
+    initialMode?: 'login' | 'signup';
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, contrast, blueColor }) => {
-    const [mode, setMode] = useState<'login' | 'signup'>('signup');
+export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, contrast, blueColor, initialMode = 'signup' }) => {
+    const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -87,11 +88,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, contra
                 boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
                 display: 'flex', flexDirection: 'column', gap: '16px'
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-                        {mode === 'login' ? 'Log In' : 'Sign Up'}
-                    </h2>
-                    <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: contrast.secondary, cursor: 'pointer', fontSize: '18px', padding: 0 }}>&times;</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: mode === 'login' ? blueColor : '#10b981' }}>
+                            {mode === 'login' ? 'Welcome Back!' : 'Create Account'}
+                        </h2>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: contrast.secondary }}>
+                            {mode === 'login'
+                                ? 'Log in to access your 50-period Baccarat history.'
+                                : 'Sign up to claim your 10 free daily credits.'}
+                        </p>
+                    </div>
+                    <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: contrast.secondary, cursor: 'pointer', fontSize: '22px', padding: 0, lineHeight: 1 }}>&times;</button>
                 </div>
 
                 {error && (
