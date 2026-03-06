@@ -39,9 +39,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // 2. Extension Icon Click (Toggle Board natively)
 chrome.action.onClicked.addListener((tab) => {
     if (tab.id) {
-        chrome.storage.local.get(['polyBoardEnabled'], (res) => {
-            const nextState = !res.polyBoardEnabled;
-            chrome.storage.local.set({ polyBoardEnabled: nextState });
+        chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_BOARD' }).catch(() => {
+            // Content script may not be ready, but this handles transient per-tab click explicitly 
+            // without global storage side-effects.
         });
     }
 });

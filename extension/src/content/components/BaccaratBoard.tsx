@@ -69,9 +69,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     // Persist and load layout mode & settings
     useEffect(() => {
         if (typeof chrome !== 'undefined' && chrome.storage) {
-            chrome.storage.local.get(['polyLayoutMode', 'polyBoardEnabled', 'polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale', 'polyBgColor', 'polyBgOpacity', 'polyPosition'], (res) => {
+            chrome.storage.local.get(['polyLayoutMode', 'polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale', 'polyBgColor', 'polyBgOpacity', 'polyPosition'], (res) => {
                 if (res.polyLayoutMode) setLayoutMode(res.polyLayoutMode as 'floating' | 'sidebar');
-                if (res.polyBoardEnabled !== undefined) setIsBoardEnabled(Boolean(res.polyBoardEnabled));
                 if (res.polyIsVisible !== undefined) setIsExpanded(Boolean(res.polyIsVisible));
                 if (res.polyYesColor) setYesColor(String(res.polyYesColor));
                 if (res.polyNoColor) setNoColor(String(res.polyNoColor));
@@ -87,9 +86,6 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     useEffect(() => {
         const handleStorageChange = (changes: any, areaName: string) => {
             if (areaName === 'local') {
-                if (changes.polyBoardEnabled !== undefined) {
-                    setIsBoardEnabled(Boolean(changes.polyBoardEnabled.newValue));
-                }
                 if (changes.polyLayoutMode !== undefined) {
                     setLayoutMode(changes.polyLayoutMode.newValue);
                     setMinimized(false);
@@ -114,6 +110,19 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 chrome.storage.onChanged.removeListener(handleStorageChange);
             }
         };
+    }, []);
+
+    // Transient Board Toggle specific to this tab session
+    useEffect(() => {
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            const messageListener = (request: any) => {
+                if (request.type === 'TOGGLE_BOARD') {
+                    setIsBoardEnabled(prev => !prev);
+                }
+            };
+            chrome.runtime.onMessage.addListener(messageListener);
+            return () => chrome.runtime.onMessage.removeListener(messageListener);
+        }
     }, []);
 
     const toggleLayout = (e: React.MouseEvent) => {
@@ -366,7 +375,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                     <button className="btn-icon" onClick={(e) => { e.stopPropagation(); setMinimized(!minimized); }} title="Minimize">
                         {minimized ? '+' : '-'}
                     </button>
-                    <button className="btn-close" onClick={(e) => { e.stopPropagation(); chrome.storage.local.set({ polyBoardEnabled: false }); }} title="Close Board">
+                    <button className="btn-close" onClick={(e) => { e.stopPropagation(); setIsBoardEnabled(false); }} title="Close Board">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                 </div>
