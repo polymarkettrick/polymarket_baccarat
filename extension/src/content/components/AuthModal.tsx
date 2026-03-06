@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../../core/supabase';
 
 interface AuthModalProps {
     onClose: () => void;
@@ -25,16 +26,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, contra
         }
 
         setLoading(true);
-        // TODO: Replace with actual Supabase Auth call
-        setTimeout(() => {
+        try {
+            if (mode === 'signup') {
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (error) throw error;
+                onSuccess(data.user?.email || email);
+            } else {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                onSuccess(data.user?.email || email);
+            }
+        } catch (err: any) {
+            setError(err.message || "Authentication failed");
+        } finally {
             setLoading(false);
-            onSuccess(email || 'trader@example.com');
-        }, 1000);
+        }
     };
 
     const handleGoogleAuth = () => {
-        // TODO: Replace with Chrome Identity / Supabase OAuth
-        onSuccess('google_user@example.com');
+        setError("Contacting background script for Google OAuth...");
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            chrome.runtime.sendMessage({ type: "GOOGLE_OAUTH" }, (response) => {
+                if (response?.error) {
+                    setError(response.error);
+                } else if (response?.success) {
+                    onSuccess(response.email || 'Google User');
+                } else {
+                    setError("Google Auth is currently being configured on the backend.");
+                }
+            });
+        } else {
+            setError("Cannot run Chrome APIs outside extension context.");
+        }
     };
 
     return (

@@ -20,11 +20,12 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
     const [isExpanded, setIsExpanded] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
 
-    // Auth & Credit Mock States
+    // Auth & Credit States
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const [credits] = useState(10);
-    const [userEmail, setUserEmail] = useState('trader@example.com');
+    const [credits, setCredits] = useState(10);
+    const [userEmail, setUserEmail] = useState('');
+    const [lastActive, setLastActive] = useState(Date.now());
 
     // Phase 8 Appearance
     const [yesColor, setYesColor] = useState('#3b82f6');
@@ -108,6 +109,53 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
         if (typeof chrome !== 'undefined' && chrome.storage) {
             chrome.storage.local.set({ polyLayoutMode: newMode });
         }
+    };
+
+    // Subscribing to Supabase Auth State
+    useEffect(() => {
+        import('../../core/supabase').then(({ supabase }) => {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) {
+                    setIsAuthenticated(true);
+                    setUserEmail(session.user.email || '');
+                } else {
+                    setIsAuthenticated(false);
+                }
+            });
+
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    setIsAuthenticated(true);
+                    setUserEmail(session.user.email || '');
+                    setLastActive(Date.now());
+                } else if (event === 'SIGNED_OUT') {
+                    setIsAuthenticated(false);
+                    setUserEmail('');
+                }
+            });
+
+            return () => {
+                subscription.unsubscribe();
+            };
+        });
+    }, []);
+
+    // 24 Hour Auto-Logout Check
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const interval = setInterval(() => {
+            if (Date.now() - lastActive > 24 * 60 * 60 * 1000) {
+                import('../../core/supabase').then(({ supabase }) => {
+                    supabase.auth.signOut();
+                });
+            }
+        }, 60000); // check every minute
+        return () => clearInterval(interval);
+    }, [isAuthenticated, lastActive]);
+
+    // Update lastActive on interactions
+    const handleInteraction = () => {
+        if (isAuthenticated) setLastActive(Date.now());
     };
 
     const toggleExpand = (e: React.MouseEvent) => {
@@ -220,7 +268,12 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
             ref={containerRef}
             className={`poly-baccarat-container ${minimized ? 'minimized' : ''} ${layoutMode === 'sidebar' ? 'sidebar-mode' : 'floating-mode'} ${isExpanded ? 'expanded-mode' : 'compact-mode'} ${showSettings ? 'settings-open' : ''}`}
             style={inlineStyles}
-            onClick={() => minimized && setMinimized(false)}
+            onClick={(e) => {
+                if (minimized) setMinimized(false);
+                handleInteraction();
+            }}
+            onMouseMove={handleInteraction}
+            onKeyDown={handleInteraction}
         >
             <div
                 className="header"
@@ -261,10 +314,16 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                         <>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: contrast.primary, fontSize: '12px' }}>
                                 <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--blue-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
-                                    {userEmail.charAt(0).toUpperCase()}
+                                    {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
                                 </div>
                                 <span style={{ opacity: 0.9 }}>{userEmail}</span>
-                                <button onClick={() => setIsAuthenticated(false)} style={{ background: 'transparent', border: 'none', color: contrast.secondary, fontSize: '10px', cursor: 'pointer', textDecoration: 'underline', marginLeft: '4px' }}>Log Out</button>
+                                <button
+                                    onClick={() => import('../../core/supabase').then(({ supabase }) => supabase.auth.signOut())}
+                                    style={{ background: 'transparent', border: 'none', color: contrast.secondary, cursor: 'pointer', marginLeft: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    title="Log Out"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                </button>
                             </div>
                             <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 🪙 {credits} Credits
