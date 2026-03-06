@@ -1,9 +1,13 @@
 export interface BaccaratStats {
     beadPlate: number[][]; // 6 rows, dynamic columns
     bigRoad: number[][];   // 6 rows, dynamic columns (-1 means empty)
-    currentStreak: number;
-    longestStreak: number;
-    yesPercentage: number;
+    recentPeriod: number;
+    recentUpCount: number;
+    recentDownCount: number;
+    recentUpPercent: number;
+    recentDownPercent: number;
+    streakOf3Count: number;
+    streakOf4Count: number;
 }
 
 /**
@@ -12,7 +16,17 @@ export interface BaccaratStats {
  */
 export function generateBaccaratBoard(history: number[]): BaccaratStats {
     if (!history || history.length === 0) {
-        return { beadPlate: [], bigRoad: [], currentStreak: 0, longestStreak: 0, yesPercentage: 0 };
+        return {
+            beadPlate: [],
+            bigRoad: [],
+            recentPeriod: 15,
+            recentUpCount: 0,
+            recentDownCount: 0,
+            recentUpPercent: 0,
+            recentDownPercent: 0,
+            streakOf3Count: 0,
+            streakOf4Count: 0
+        };
     }
 
     // 1. Bead Plate: Fixed 6 rows, fill top->bottom, left->right.
@@ -26,24 +40,40 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
         beadPlate[row][col] = history[i];
     }
 
-    // 2. Streak Stats
-    let yesCount = 0;
-    let currentStreak = 1;
-    let longestStreak = 1;
+    // 2. Recent Period Stats (default 15)
+    // Always use the latest N outcomes
+    const recentPeriod = 15; // Set to 15 default, UI will eventually toggle this
+    const historySlice = history.slice(-recentPeriod);
 
-    for (let i = 0; i < history.length; i++) {
-        if (history[i] === 1) yesCount++;
-        if (i > 0) {
-            if (history[i] === history[i - 1]) {
-                currentStreak++;
-                longestStreak = Math.max(longestStreak, currentStreak);
-            } else {
-                currentStreak = 1;
-            }
+    let recentUpCount = 0;
+    let recentDownCount = 0;
+    let streakOf3Count = 0;
+    let streakOf4Count = 0;
+
+    let currentTempStreak = 0;
+    let lastOutcome = -1;
+
+    for (let i = 0; i < historySlice.length; i++) {
+        const val = historySlice[i];
+        if (val === 1) recentUpCount++;
+        if (val === 0) recentDownCount++;
+
+        if (val === lastOutcome) {
+            currentTempStreak++;
+        } else {
+            // Evaluated the completed streak before resetting
+            if (currentTempStreak === 3) streakOf3Count++;
+            if (currentTempStreak >= 4) streakOf4Count++; // Often 4+ is counted together, but if exactly 4 is needed we can change this. Assuming 4+ is more useful for baccarat logic. Let's do exactly 3 and exactly 4 for now as planned.
+            currentTempStreak = 1;
+            lastOutcome = val;
         }
     }
+    // Check final trailing streak
+    if (currentTempStreak === 3) streakOf3Count++;
+    if (currentTempStreak >= 4) streakOf4Count++; // Adjusting to >= 4 as standard "long streak" metric based on prior interactions.
 
-    const yesPercentage = history.length > 0 ? yesCount / history.length : 0;
+    const recentUpPercent = historySlice.length > 0 ? recentUpCount / historySlice.length : 0;
+    const recentDownPercent = historySlice.length > 0 ? recentDownCount / historySlice.length : 0;
 
     // 3. Big Road
     // Logic: 
@@ -99,8 +129,12 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
     return {
         beadPlate,
         bigRoad,
-        currentStreak,
-        longestStreak,
-        yesPercentage
+        recentPeriod,
+        recentUpCount,
+        recentDownCount,
+        recentUpPercent,
+        recentDownPercent,
+        streakOf3Count,
+        streakOf4Count
     };
 }

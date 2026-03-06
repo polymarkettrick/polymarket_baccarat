@@ -184,12 +184,31 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
 
     const contrast = getContrastYIQ(bgColor);
 
-    const getGridScale = () => {
+    // Fix scaling discontinuity and separate text vs grid logic
+    const getScaleFactors = () => {
         const baseScale = uiScale / 100;
-        return uiScale > 100 ? baseScale * 0.75 : baseScale;
+
+        // Before 100%, everything is 1:1. 
+        if (uiScale <= 100) {
+            return { grid: baseScale, text: baseScale };
+        }
+
+        // After 100%, the user wants the grid to scale up but slower.
+        // We calculate the 'excess' scale and apply a deduction multiplier to that excess.
+        // E.g., at 110%, the excess is 0.10.
+        const excess = baseScale - 1.0;
+
+        // Grid: 25% slower growth past 100% (multiplier 0.75)
+        // This ensures at 100% it is 1.0, and at 110% it smoothly goes to 1.0 + (0.10 * 0.75) = 1.075
+        const continuousGridScale = 1.0 + (excess * 0.75);
+
+        // Text: 30% slower growth past 100% per user request
+        const continuousTextScale = 1.0 + (excess * 0.70);
+
+        return { grid: continuousGridScale, text: continuousTextScale };
     };
 
-    const actualGridScale = getGridScale();
+    const scaleFactors = getScaleFactors();
 
     const inlineStyles: React.CSSProperties = {
         ...(layoutMode === 'floating'
@@ -202,8 +221,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
         '--text-primary': contrast.primary,
         '--text-secondary': contrast.secondary,
         '--text-inverse': contrast.inversePrimary,
-        '--grid-scale-factor': actualGridScale.toString(),
-        '--text-scale-factor': Math.max(0.7, actualGridScale).toString(),
+        '--grid-scale-factor': scaleFactors.grid.toString(),
+        '--text-scale-factor': Math.max(0.7, scaleFactors.text).toString(),
     } as any;
 
     const updateSetting = (key: string, value: any) => {
@@ -313,13 +332,13 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                                 <BeadPlate board={stats.beadPlate} labels={labels} maxCols={isExpanded ? 30 : 6} />
                                 <BigRoad board={stats.bigRoad} labels={labels} maxCols={isExpanded ? 30 : 6} />
                             </div>
-                            <StatsGroup
-                                currentStreak={stats.currentStreak}
-                                longestStreak={stats.longestStreak}
-                                yesPercentage={stats.yesPercentage}
-                                timeframe={timeframe}
-                                labels={labels}
-                            />
+                            {stats && (
+                                <StatsGroup
+                                    stats={stats}
+                                    timeframe={timeframe}
+                                    labels={labels}
+                                />
+                            )}
                         </div>
                     )}
                 </>
