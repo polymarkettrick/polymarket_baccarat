@@ -310,8 +310,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
 
     const inlineStyles: React.CSSProperties = {
         ...(layoutMode === 'floating'
-            ? { left: `${position.x}px`, top: '0px', bottom: '0px', right: 'auto', height: '100vh' }
-            : {}),
+            ? { left: `${position.x}px`, top: '0px', bottom: '0px', right: 'auto', height: minimized ? '40px' : '100vh', overflow: 'hidden' }
+            : { overflow: 'hidden' }),
         '--blue-color': yesColor,
         '--red-color': noColor,
         '--bg-color': `rgba(${hexToRgb(bgColor)}, ${bgOpacity / 100})`,
@@ -391,7 +391,12 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                                 </div>
                                 <span style={{ opacity: 0.9 }}>{userEmail}</span>
                                 <button
-                                    onClick={() => import('../../core/supabase').then(({ supabase }) => supabase.auth.signOut())}
+                                    onClick={() => {
+                                        import('../../core/supabase').then(({ supabase }) => supabase.auth.signOut());
+                                        setIsAuthenticated(false);
+                                        setHasUnlocked(false);
+                                        setUserEmail('');
+                                    }}
                                     style={{ background: 'transparent', border: 'none', color: contrast.secondary, cursor: 'pointer', marginLeft: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     title="Log Out"
                                 >
