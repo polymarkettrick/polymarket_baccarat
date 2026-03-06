@@ -15,10 +15,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, contra
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setSuccessMsg(null);
 
         if (mode === 'signup' && password !== confirmPassword) {
             setError("Passwords do not match");
@@ -30,6 +32,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, contra
             if (mode === 'signup') {
                 const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) throw error;
+
+                // If session is null, it means email confirmation is required by Supabase settings
+                if (data.user && !data.session) {
+                    setSuccessMsg("Registration successful! Please check your email inbox to confirm your account.");
+                    setMode('login');
+                    setPassword('');
+                    setConfirmPassword('');
+                    return;
+                }
+
                 onSuccess(data.user?.email || email);
             } else {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -85,6 +97,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, contra
                 {error && (
                     <div style={{ padding: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '4px', fontSize: '12px', border: '1px solid #ef4444' }}>
                         {error}
+                    </div>
+                )}
+
+                {successMsg && (
+                    <div style={{ padding: '8px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '4px', fontSize: '12px', border: '1px solid #10b981' }}>
+                        {successMsg}
                     </div>
                 )}
 

@@ -97,8 +97,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 interactive: true
             }, (redirectUrl) => {
                 if (chrome.runtime.lastError || !redirectUrl) {
-                    console.error("[Background] WebAuthFlow Failed:", chrome.runtime.lastError);
-                    sendResponse({ error: chrome.runtime.lastError?.message || "Google Flow Cancelled or Blocked." });
+                    const errMsg = chrome.runtime.lastError?.message || JSON.stringify(chrome.runtime.lastError);
+                    console.error("[Background] WebAuthFlow Failed:", errMsg);
+                    sendResponse({ error: errMsg || "Google Flow Cancelled or Blocked." });
                     return;
                 }
 
