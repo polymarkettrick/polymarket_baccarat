@@ -19,6 +19,11 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
     const [isExpanded, setIsExpanded] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
 
+    // Auth & Credit Mock States
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [credits] = useState(10);
+    const [userEmail] = useState('trader@example.com');
+
     // Phase 8 Appearance
     const [yesColor, setYesColor] = useState('#3b82f6');
     const [noColor, setNoColor] = useState('#ef4444');
@@ -227,6 +232,13 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                     Trend Analysis
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {!isAuthenticated && (
+                        <>
+                            <button onClick={() => setIsAuthenticated(true)} style={{ background: 'transparent', border: 'none', color: 'var(--blue-color)', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', padding: '4px 8px' }}>Log In</button>
+                            <button onClick={() => setIsAuthenticated(true)} style={{ background: 'var(--blue-color)', border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', padding: '4px 12px', borderRadius: '4px' }}>Sign Up</button>
+                            <div style={{ width: '1px', height: '14px', background: 'var(--border-color)', margin: '0 4px' }} />
+                        </>
+                    )}
                     <button className="btn-icon" onClick={() => setShowSettings(!showSettings)} title="Open Appearance Settings">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     </button>
@@ -247,6 +259,21 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                     <button className="btn-close" onClick={(e) => { e.stopPropagation(); setMinimized(!minimized); }}>{minimized ? '+' : '-'}</button>
                 </div>
             </div>
+
+            {isAuthenticated && !minimized && (
+                <div style={{ padding: '8px 16px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: contrast.primary, fontSize: '12px' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--blue-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
+                            {userEmail.charAt(0).toUpperCase()}
+                        </div>
+                        <span style={{ opacity: 0.9 }}>{userEmail}</span>
+                        <button onClick={() => setIsAuthenticated(false)} style={{ background: 'transparent', border: 'none', color: contrast.secondary, fontSize: '10px', cursor: 'pointer', textDecoration: 'underline', marginLeft: '4px' }}>Log Out</button>
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🪙 {credits} Credits
+                    </div>
+                </div>
+            )}
 
             {!minimized && showSettings && (
                 <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(0,0,0,0.1)', flex: 1, color: contrast.primary }}>

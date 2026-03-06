@@ -37,7 +37,7 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
     for (let i = 0; i < history.length; i++) {
         const col = Math.floor(i / rows);
         const row = i % rows;
-        beadPlate[row][col] = history[i];
+        beadPlate[row][col] = history[i] ?? -1;
     }
 
     // 2. Recent Period Stats (default 15)
@@ -54,7 +54,7 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
     let lastOutcome = -1;
 
     for (let i = 0; i < historySlice.length; i++) {
-        const val = historySlice[i];
+        const val = historySlice[i] ?? -1;
         if (val === 1) recentUpCount++;
         if (val === 0) recentDownCount++;
 
