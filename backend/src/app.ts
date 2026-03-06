@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import marketRoutes from './routes/market.routes';
 import subscriptionRoutes from './routes/subscription.routes';
+import { supabaseAdmin } from './config/supabase';
 
 const app = express();
 
@@ -23,6 +24,17 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Health Check (Keep-Alive Ping for Supabase Free Tier)
+app.get('/health', async (req, res) => {
+    try {
+        // Ping Supabase to reset 7-day inactivity timer
+        await supabaseAdmin.from('markets').select('id').limit(1);
+        res.status(200).json({ status: 'ok', message: 'Supabase pinged successfully.' });
+    } catch (e) {
+        res.status(500).json({ status: 'error', message: 'Failed to ping Supabase.' });
+    }
+});
 
 // Main Routes
 app.use('/api/market-history', marketRoutes);
