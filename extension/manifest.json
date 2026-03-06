@@ -6,7 +6,8 @@
     "permissions": [
         "storage",
         "webNavigation",
-        "scripting"
+        "scripting",
+        "identity"
     ],
     "host_permissions": [
         "*://*.polymarket.com/*",

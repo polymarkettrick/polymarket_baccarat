@@ -4,17 +4,17 @@ import { BigRoad } from './BigRoad';
 import { StatsGroup } from './StatsGroup';
 import { SkeletonLoader, ErrorState } from './UIHelpers';
 import { AuthModal } from './AuthModal';
-import { BaccaratStats } from '../../../../packages/shared/src/utils/baccarat';
+import { BaccaratStats, generateBaccaratBoard } from '../../../../packages/shared/src/utils/baccarat';
 
 interface BoardProps {
     loading: boolean;
     error: string | null;
-    stats: BaccaratStats | null;
+    history: number[] | null;
     timeframe: string;
     labels: string[];
 }
 
-export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, timeframe, labels }) => {
+export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, timeframe, labels }) => {
     const [minimized, setMinimized] = useState(false);
     const [layoutMode, setLayoutMode] = useState<'floating' | 'sidebar'>('floating');
     const [isExpanded, setIsExpanded] = useState(false);
@@ -26,6 +26,15 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
     const [credits, setCredits] = useState(10);
     const [userEmail, setUserEmail] = useState('');
     const [lastActive, setLastActive] = useState(Date.now());
+    const [hasUnlocked, setHasUnlocked] = useState(false);
+    const [isUnlocking, setIsUnlocking] = useState(false);
+
+    // Compute stats from raw history
+    const limit = hasUnlocked ? 50 : 15;
+    const stats: BaccaratStats | null = React.useMemo(() => {
+        if (!history) return null;
+        return generateBaccaratBoard(history, limit);
+    }, [history, limit]);
 
     // Phase 8 Appearance
     const [yesColor, setYesColor] = useState('#3b82f6');
@@ -113,21 +122,37 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
 
     // Subscribing to Supabase Auth State
     useEffect(() => {
+        let mounted = true;
         import('../../core/supabase').then(({ supabase }) => {
+            const fetchCredits = async () => {
+                try {
+                    const { data, error } = await supabase.rpc('claim_daily_credits');
+                    if (data && mounted) setCredits(data.credits);
+                    else if (error) {
+                        const { data: profile } = await supabase.from('user_profiles').select('credits').single();
+                        if (profile && mounted) setCredits(profile.credits);
+                    }
+                } catch (e) { console.error("Credit fetch error", e); }
+            };
+
             supabase.auth.getSession().then(({ data: { session } }) => {
+                if (!mounted) return;
                 if (session) {
                     setIsAuthenticated(true);
                     setUserEmail(session.user.email || '');
+                    fetchCredits();
                 } else {
                     setIsAuthenticated(false);
                 }
             });
 
             const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                if (!mounted) return;
                 if (event === 'SIGNED_IN' && session) {
                     setIsAuthenticated(true);
                     setUserEmail(session.user.email || '');
                     setLastActive(Date.now());
+                    fetchCredits();
                 } else if (event === 'SIGNED_OUT') {
                     setIsAuthenticated(false);
                     setUserEmail('');
@@ -135,6 +160,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
             });
 
             return () => {
+                mounted = false;
                 subscription.unsubscribe();
             };
         });
@@ -156,6 +182,32 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
     // Update lastActive on interactions
     const handleInteraction = () => {
         if (isAuthenticated) setLastActive(Date.now());
+    };
+
+    const handleUnlock = async () => {
+        if (!isAuthenticated || credits < 1 || isUnlocking) return;
+        setIsUnlocking(true);
+        try {
+            const { supabase } = await import('../../core/supabase');
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .update({ credits: credits - 1 })
+                    .eq('id', user.id);
+
+                if (!error) {
+                    setCredits(prev => prev - 1);
+                    setHasUnlocked(true);
+                } else {
+                    console.error("Failed to consume credit", error);
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsUnlocking(false);
+        }
     };
 
     const toggleExpand = (e: React.MouseEvent) => {
@@ -325,8 +377,19 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, stats, tim
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                                 </button>
                             </div>
-                            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                🪙 {credits} Credits
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    🪙 {credits} Credits
+                                </div>
+                                {!hasUnlocked && (
+                                    <button
+                                        onClick={handleUnlock}
+                                        disabled={isUnlocking || credits < 1}
+                                        style={{ background: 'var(--blue-color)', opacity: (isUnlocking || credits < 1) ? 0.5 : 1, border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '12px', cursor: (isUnlocking || credits < 1) ? 'not-allowed' : 'pointer', padding: '4px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
+                                    >
+                                        {isUnlocking ? 'Unlocking...' : 'Unlock 50-Periods (1 Credit)'}
+                                    </button>
+                                )}
                             </div>
                         </>
                     ) : (

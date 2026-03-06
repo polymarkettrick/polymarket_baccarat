@@ -25,7 +25,6 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 // 1. Mock Data Injection for UI Testing
 const MockHistory = [1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0];
-const mockStats = generateBaccaratBoard(MockHistory);
 
 // 2. Shadow DOM Wrapper & Injection
 function injectApp() {
@@ -61,7 +60,7 @@ function injectApp() {
             <BaccaratBoard
                 loading={false}
                 error={null}
-                stats={mockStats}
+                history={MockHistory}
                 timeframe={mockTimeframe}
                 labels={mockLabels}
             />

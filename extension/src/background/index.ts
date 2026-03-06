@@ -61,3 +61,69 @@ chrome.runtime.onMessageExternal.addListener((request, _sender, sendResponse) =>
         sendResponse({ success: true, message: "Extension upgraded session" });
     }
 });
+
+// 5. Google OAuth Flow Handler
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'GOOGLE_OAUTH') {
+        const supabase = getSupabase();
+
+        const extensionRedirectUrl = chrome.identity.getRedirectURL();
+        console.log("[Background] Initiating Google OAuth Flow with Redirect URI:", extensionRedirectUrl);
+
+        supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: extensionRedirectUrl,
+                skipBrowserRedirect: true
+            }
+        }).then(({ data, error }) => {
+            if (error || !data?.url) {
+                console.error("[Background] Supabase OAuth URL generation failed", error);
+                sendResponse({ error: error?.message || "OAuth URL generation failed" });
+                return;
+            }
+
+            chrome.identity.launchWebAuthFlow({
+                url: data.url,
+                interactive: true
+            }, (redirectUrl) => {
+                if (chrome.runtime.lastError || !redirectUrl) {
+                    console.error("[Background] WebAuthFlow Failed:", chrome.runtime.lastError);
+                    sendResponse({ error: chrome.runtime.lastError?.message || "Google Flow Cancelled or Blocked." });
+                    return;
+                }
+
+                // Supabase returns the session directly in the URL hash fragment
+                const currentUrl = new URL(redirectUrl);
+                const hashParams = new URLSearchParams(currentUrl.hash.substring(1));
+                const accessToken = hashParams.get('access_token');
+                const refreshToken = hashParams.get('refresh_token');
+
+                if (accessToken && refreshToken) {
+                    supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    }).then(({ data: sessionData, error: sessionError }) => {
+                        if (sessionError) {
+                            sendResponse({ error: sessionError.message });
+                        } else {
+                            // Sync the final session object down into chrome.storage.local
+                            // so the Content Script automatically picks it up via onAuthStateChange
+                            sendResponse({ success: true, email: sessionData.session?.user.email });
+                            // Broadcast auth state change manually to ping active tabs
+                            chrome.tabs.query({ url: "*://*.polymarket.com/*" }, (tabs) => {
+                                tabs.forEach(t => t.id && chrome.tabs.sendMessage(t.id, { type: 'AUTH_STATE_CHANGED' }));
+                            });
+                        }
+                    });
+                } else {
+                    const errDesc = hashParams.get('error_description') || "Missing tokens from Google redirect. Make sure Google is enabled in Supabase and your Extension Redirect URL is whitelisted!";
+                    sendResponse({ error: errDesc });
+                }
+            });
+        });
+
+        // Tell Chrome we will sendResponse asynchronously
+        return true;
+    }
+});

@@ -14,12 +14,12 @@ export interface BaccaratStats {
  * Pure Function Engine for generating Baccarat tracking boards.
  * @param history Array of numerical outcomes (1 for YES, 0 for NO) ordered from oldest to newest.
  */
-export function generateBaccaratBoard(history: number[]): BaccaratStats {
+export function generateBaccaratBoard(history: number[], limit: number = 15): BaccaratStats {
     if (!history || history.length === 0) {
         return {
             beadPlate: [],
             bigRoad: [],
-            recentPeriod: 15,
+            recentPeriod: limit,
             recentUpCount: 0,
             recentDownCount: 0,
             recentUpPercent: 0,
@@ -29,22 +29,20 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
         };
     }
 
+    const slicedHistory = history.slice(-limit);
+
     // 1. Bead Plate: Fixed 6 rows, fill top->bottom, left->right.
     const rows = 6;
-    const cols = Math.ceil(history.length / rows);
+    const cols = Math.ceil(slicedHistory.length / rows);
     const beadPlate: number[][] = Array.from({ length: rows }, () => Array(cols).fill(-1));
 
-    for (let i = 0; i < history.length; i++) {
+    for (let i = 0; i < slicedHistory.length; i++) {
         const col = Math.floor(i / rows);
         const row = i % rows;
-        beadPlate[row][col] = history[i] ?? -1;
+        beadPlate[row][col] = slicedHistory[i] ?? -1;
     }
 
-    // 2. Recent Period Stats (default 15)
-    // Always use the latest N outcomes
-    const recentPeriod = 15; // Set to 15 default, UI will eventually toggle this
-    const historySlice = history.slice(-recentPeriod);
-
+    // 2. Recent Period Stats
     let recentUpCount = 0;
     let recentDownCount = 0;
     let streakOf3Count = 0;
@@ -53,8 +51,8 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
     let currentTempStreak = 0;
     let lastOutcome = -1;
 
-    for (let i = 0; i < historySlice.length; i++) {
-        const val = historySlice[i] ?? -1;
+    for (let i = 0; i < slicedHistory.length; i++) {
+        const val = slicedHistory[i] ?? -1;
         if (val === 1) recentUpCount++;
         if (val === 0) recentDownCount++;
 
@@ -72,8 +70,8 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
     if (currentTempStreak === 3) streakOf3Count++;
     if (currentTempStreak >= 4) streakOf4Count++; // Adjusting to >= 4 as standard "long streak" metric based on prior interactions.
 
-    const recentUpPercent = historySlice.length > 0 ? recentUpCount / historySlice.length : 0;
-    const recentDownPercent = historySlice.length > 0 ? recentDownCount / historySlice.length : 0;
+    const recentUpPercent = slicedHistory.length > 0 ? recentUpCount / slicedHistory.length : 0;
+    const recentDownPercent = slicedHistory.length > 0 ? recentDownCount / slicedHistory.length : 0;
 
     // 3. Big Road
     // Logic: 
@@ -85,14 +83,14 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
     let currentX = 0;
     let currentY = 0;
 
-    bigRoadCoords.push({ outcome: history[0], x: 0, y: 0 });
+    bigRoadCoords.push({ outcome: slicedHistory[0], x: 0, y: 0 });
 
     const isOccupied = (x: number, y: number) =>
         bigRoadCoords.some(c => c.x === x && c.y === y);
 
-    for (let i = 1; i < history.length; i++) {
-        const currentOutcome = history[i];
-        const prevOutcome = history[i - 1];
+    for (let i = 1; i < slicedHistory.length; i++) {
+        const currentOutcome = slicedHistory[i];
+        const prevOutcome = slicedHistory[i - 1];
 
         if (currentOutcome === prevOutcome) {
             // Trying to go down
@@ -129,7 +127,7 @@ export function generateBaccaratBoard(history: number[]): BaccaratStats {
     return {
         beadPlate,
         bigRoad,
-        recentPeriod,
+        recentPeriod: limit,
         recentUpCount,
         recentDownCount,
         recentUpPercent,
