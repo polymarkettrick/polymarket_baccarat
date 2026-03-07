@@ -12,9 +12,10 @@ interface BoardProps {
     history: number[] | null;
     timeframe: string;
     labels: string[];
+    eventSlug: string | null;
 }
 
-export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, timeframe, labels }) => {
+export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, timeframe, labels, eventSlug }) => {
     const [minimized, setMinimized] = useState(false);
     const [layoutMode, setLayoutMode] = useState<'floating' | 'sidebar'>('floating');
     const [isExpanded, setIsExpanded] = useState(false);
@@ -381,7 +382,17 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 </div>
             </div>
 
-            {!minimized && (
+            {!minimized && !eventSlug && (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: contrast.secondary, fontSize: '14px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '12px', opacity: 0.5 }}>
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: contrast.primary }}>No Event Selected</div>
+                    <div>Navigate to a specific Polymarket event page to view its historical trend.</div>
+                </div>
+            )}
+
+            {!minimized && eventSlug && (
                 <div style={{ padding: '8px 16px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {isAuthenticated ? (
                         <>
@@ -442,7 +453,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 />
             )}
 
-            {!minimized && showSettings && (
+            {!minimized && showSettings && eventSlug && (
                 <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(0,0,0,0.1)', flex: 1, color: contrast.primary }}>
                     <h3 style={{ margin: 0, fontSize: '16px', borderBottom: `1px solid ${contrast.secondary}`, paddingBottom: '8px' }}>Appearance</h3>
 
@@ -491,7 +502,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 </div>
             )}
 
-            {!minimized && !showSettings && (
+            {!minimized && !showSettings && eventSlug && (
                 <>
                     {loading && <SkeletonLoader />}
 

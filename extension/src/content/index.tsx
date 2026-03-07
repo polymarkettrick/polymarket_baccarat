@@ -2,7 +2,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BaccaratBoard } from './components/BaccaratBoard';
 import appCss from './App.css?inline';
-import { generateBaccaratBoard } from '../../../packages/shared/src/utils/baccarat';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
     constructor(props: any) {
@@ -26,6 +25,18 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 // 1. Mock Data Injection for UI Testing
 const MockHistory = [1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0];
 
+function getEventSlugFromUrl(url: string): string | null {
+    try {
+        const urlObj = new URL(url);
+        const match = urlObj.pathname.match(/^\/event\/([^\/]+)/);
+        return match ? match[1] : null;
+    } catch (e) {
+        return null; // Fallback for invalid URLs
+    }
+}
+
+let activeRoot: any = null;
+
 // 2. Shadow DOM Wrapper & Injection
 function injectApp() {
     if (!document.body) {
@@ -34,28 +45,37 @@ function injectApp() {
     }
 
     const containerId = 'polymarket-baccarat-root';
-    if (document.getElementById(containerId)) return;
+    let container = document.getElementById(containerId);
 
-    const container = document.createElement('div');
-    container.id = containerId;
-    document.body.appendChild(container); // Overlay injected into body
+    if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+        document.body.appendChild(container); // Overlay injected into body
 
-    const shadow = container.attachShadow({ mode: 'closed' });
+        const shadow = container.attachShadow({ mode: 'closed' });
 
-    const style = document.createElement('style');
-    style.textContent = appCss; // Injecting CSS as raw string correctly
-    shadow.appendChild(style);
+        const style = document.createElement('style');
+        style.textContent = appCss; // Injecting CSS as raw string correctly
+        shadow.appendChild(style);
 
-    const rootElement = document.createElement('div');
-    shadow.appendChild(rootElement);
+        const rootElement = document.createElement('div');
+        shadow.appendChild(rootElement);
 
-    const root = createRoot(rootElement);
+        activeRoot = createRoot(rootElement);
+    }
+
+    renderApp();
+}
+
+function renderApp() {
+    if (!activeRoot) return;
 
     // Mock Metadata for Local Testing UI
     const mockTimeframe = '1d';
     const mockLabels = ['Up', 'Down']; // Testing Crypto Theme
+    const eventSlug = getEventSlugFromUrl(window.location.href);
 
-    root.render(
+    activeRoot.render(
         <ErrorBoundary>
             <BaccaratBoard
                 loading={false}
@@ -63,6 +83,7 @@ function injectApp() {
                 history={MockHistory}
                 timeframe={mockTimeframe}
                 labels={mockLabels}
+                eventSlug={eventSlug}
             />
         </ErrorBoundary>
     );
@@ -75,8 +96,8 @@ const observer = new MutationObserver(() => {
     if (lastHref !== document.location.href) {
         lastHref = document.location.href;
         console.log('[Baccarat Extension] URL changed to:', lastHref);
-        // Future logic: Tell background script to fetch new API data for new URL slug
-        injectApp();
+        // Ensure UI updates with new URL
+        renderApp();
     }
 });
 
