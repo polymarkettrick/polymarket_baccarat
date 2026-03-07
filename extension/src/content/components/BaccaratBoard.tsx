@@ -30,6 +30,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     const [lastActive, setLastActive] = useState(Date.now());
     const [hasUnlocked, setHasUnlocked] = useState(false);
     const [isUnlocking, setIsUnlocking] = useState(false);
+    const [unlockExpiresAt, setUnlockExpiresAt] = useState<number | null>(null);
 
     // Compute stats from raw history
     const limit = hasUnlocked ? 50 : 15;
@@ -70,7 +71,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     // Persist and load layout mode & settings
     useEffect(() => {
         if (typeof chrome !== 'undefined' && chrome.storage) {
-            chrome.storage.local.get(['polyLayoutMode', 'polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale', 'polyBgColor', 'polyBgOpacity', 'polyPosition'], (res) => {
+            chrome.storage.local.get(['polyLayoutMode', 'polyIsVisible', 'polyYesColor', 'polyNoColor', 'polyUiScale', 'polyBgColor', 'polyBgOpacity', 'polyPosition', 'polyUnlockExpiresAt'], (res) => {
                 if (res.polyLayoutMode) setLayoutMode(res.polyLayoutMode as 'floating' | 'sidebar');
                 if (res.polyIsVisible !== undefined) setIsExpanded(Boolean(res.polyIsVisible));
                 if (res.polyYesColor) setYesColor(String(res.polyYesColor));
@@ -79,6 +80,16 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 if (res.polyBgColor) setBgColor(String(res.polyBgColor));
                 if (res.polyBgOpacity !== undefined) setBgOpacity(Number(res.polyBgOpacity));
                 if (res.polyPosition) setPosition(res.polyPosition as { x: number, y: number });
+
+                if (res.polyUnlockExpiresAt) {
+                    const expiresAt = Number(res.polyUnlockExpiresAt);
+                    if (Date.now() < expiresAt) {
+                        setUnlockExpiresAt(expiresAt);
+                        setHasUnlocked(true);
+                    } else {
+                        chrome.storage.local.remove(['polyUnlockExpiresAt']);
+                    }
+                }
             });
         }
     }, []);
@@ -194,6 +205,23 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
         return () => clearInterval(interval);
     }, [isAuthenticated, lastActive]);
 
+    // 15-Minute Unlock Expiration Timer
+    useEffect(() => {
+        if (!hasUnlocked || !unlockExpiresAt) return;
+
+        const interval = setInterval(() => {
+            if (Date.now() >= unlockExpiresAt) {
+                setHasUnlocked(false);
+                setUnlockExpiresAt(null);
+                if (typeof chrome !== 'undefined' && chrome.storage) {
+                    chrome.storage.local.remove(['polyUnlockExpiresAt']);
+                }
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [hasUnlocked, unlockExpiresAt]);
+
     // Update lastActive on interactions
     const handleInteraction = () => {
         if (isAuthenticated) setLastActive(Date.now());
@@ -206,7 +234,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
         }
         if (credits < 1 || isUnlocking) return;
 
-        const isConfirmed = window.confirm("Unlock 50 historical periods for this event?\n\nThis will deduct 1 Credit from your account.");
+        const isConfirmed = window.confirm("Unlock 50 historical periods for this event?\n\nThis will deduct 1 Credit from your account. The board will remain unlocked for 15 minutes.");
         if (!isConfirmed) return;
 
         setIsUnlocking(true);
@@ -222,6 +250,12 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 if (!error) {
                     setCredits(prev => prev - 1);
                     setHasUnlocked(true);
+
+                    const expireTime = Date.now() + 15 * 60 * 1000;
+                    setUnlockExpiresAt(expireTime);
+                    if (typeof chrome !== 'undefined' && chrome.storage) {
+                        chrome.storage.local.set({ polyUnlockExpiresAt: expireTime });
+                    }
                 } else {
                     console.error("Failed to consume credit", error);
                 }
