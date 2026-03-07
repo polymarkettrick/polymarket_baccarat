@@ -4,9 +4,12 @@ interface BeadPlateProps {
     board: number[][]; // 6 rows, N columns
     labels?: string[]; // Determines context colors (Crypto vs Casino)
     maxCols?: number;
+    hasUnlocked?: boolean;
+    onUnlockRequest?: () => void;
+    isUnlocking?: boolean;
 }
 
-export const BeadPlate: React.FC<BeadPlateProps> = ({ board, labels = ["Yes", "No"], maxCols }) => {
+export const BeadPlate: React.FC<BeadPlateProps> = ({ board, maxCols, hasUnlocked = true, onUnlockRequest, isUnlocking = false }) => {
     if (!board || board.length === 0) return null;
 
     let columns = board[0].length;
@@ -18,12 +21,36 @@ export const BeadPlate: React.FC<BeadPlateProps> = ({ board, labels = ["Yes", "N
 
     return (
         <div>
-            <div style={{ fontSize: 'calc(13px * var(--text-scale-factor, 1))', color: 'var(--text-primary)', opacity: 0.8, marginBottom: '8px' }}>Bead Plate</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ fontSize: 'calc(13px * var(--text-scale-factor, 1))', color: 'var(--text-primary)', opacity: 0.8 }}>Bead Plate</div>
+                {!hasUnlocked && onUnlockRequest && (
+                    <button
+                        onClick={onUnlockRequest}
+                        disabled={isUnlocking}
+                        style={{
+                            background: 'var(--blue-color)',
+                            opacity: isUnlocking ? 0.5 : 1,
+                            border: 'none',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            fontSize: 'calc(11px * var(--text-scale-factor, 1))',
+                            cursor: isUnlocking ? 'not-allowed' : 'pointer',
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {isUnlocking ? 'Unlocking...' : 'More Periods (1 Credit)'}
+                    </button>
+                )}
+            </div>
             <div className="grid-container">
                 <div className="grid">
                     {Array.from({ length: columns }).map((_, i) => {
                         const colIndex = startCol + i;
-                        return board.map((row, rowIndex) => {
+                        return board.map((_, rowIndex) => {
                             const outcome = board[rowIndex][colIndex];
 
                             // Only use existing CSS classes regardless of label

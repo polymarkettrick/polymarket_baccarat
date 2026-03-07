@@ -200,7 +200,15 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     };
 
     const handleUnlock = async () => {
-        if (!isAuthenticated || credits < 1 || isUnlocking) return;
+        if (!isAuthenticated) {
+            setShowAuthModal('login');
+            return;
+        }
+        if (credits < 1 || isUnlocking) return;
+
+        const isConfirmed = window.confirm("Unlock 50 historical periods for this event?\n\nThis will deduct 1 Credit from your account.");
+        if (!isConfirmed) return;
+
         setIsUnlocking(true);
         try {
             const { supabase } = await import('../../core/supabase');
@@ -418,15 +426,6 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                                 <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
                                     🪙 {credits} Credits
                                 </div>
-                                {!hasUnlocked && (
-                                    <button
-                                        onClick={handleUnlock}
-                                        disabled={isUnlocking || credits < 1}
-                                        style={{ background: 'var(--blue-color)', opacity: (isUnlocking || credits < 1) ? 0.5 : 1, border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '12px', cursor: (isUnlocking || credits < 1) ? 'not-allowed' : 'pointer', padding: '4px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
-                                    >
-                                        {isUnlocking ? 'Unlocking...' : 'Unlock 50-Periods (1 Credit)'}
-                                    </button>
-                                )}
                             </div>
                         </>
                     ) : (
@@ -511,7 +510,14 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                     {!loading && !error && stats && (
                         <div className="top-half-content">
                             <div className="board-section">
-                                <BeadPlate board={stats.beadPlate} labels={labels} maxCols={isExpanded ? 30 : 6} />
+                                <BeadPlate
+                                    board={stats.beadPlate}
+                                    labels={labels}
+                                    maxCols={isExpanded ? 30 : 6}
+                                    hasUnlocked={hasUnlocked}
+                                    onUnlockRequest={handleUnlock}
+                                    isUnlocking={isUnlocking}
+                                />
                                 <BigRoad board={stats.bigRoad} labels={labels} maxCols={isExpanded ? 30 : 6} />
                             </div>
                             {stats && (
