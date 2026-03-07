@@ -31,9 +31,12 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     const [hasUnlocked, setHasUnlocked] = useState(false);
     const [isUnlocking, setIsUnlocking] = useState(false);
     const [unlockExpiresAt, setUnlockExpiresAt] = useState<number | null>(null);
+    const [membershipTier, setMembershipTier] = useState<'free' | 'monthly' | 'yearly'>('free');
+    const [timeLeft, setTimeLeft] = useState<string>('');
 
     // Compute stats from raw history
-    const limit = hasUnlocked ? 50 : 15;
+    const isPremium = membershipTier === 'monthly' || membershipTier === 'yearly';
+    const limit = (hasUnlocked || isPremium) ? 50 : 15;
     const stats: BaccaratStats | null = React.useMemo(() => {
         if (!history) return null;
         return generateBaccaratBoard(history, limit);
@@ -153,10 +156,15 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
             const fetchCredits = async () => {
                 try {
                     const { data, error } = await supabase.rpc('claim_daily_credits');
-                    if (data && mounted) setCredits(data.credits);
-                    else if (error) {
-                        const { data: profile } = await supabase.from('user_profiles').select('credits').single();
-                        if (profile && mounted) setCredits(profile.credits);
+                    if (data && mounted) {
+                        setCredits(data.credits);
+                        setMembershipTier(data.membership_tier || 'free');
+                    } else if (error) {
+                        const { data: profile } = await supabase.from('user_profiles').select('credits, membership_tier').single();
+                        if (profile && mounted) {
+                            setCredits(profile.credits);
+                            setMembershipTier(profile.membership_tier || 'free');
+                        }
                     }
                 } catch (e) { console.error("Credit fetch error", e); }
             };
@@ -209,15 +217,25 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
     useEffect(() => {
         if (!hasUnlocked || !unlockExpiresAt) return;
 
-        const interval = setInterval(() => {
-            if (Date.now() >= unlockExpiresAt) {
+        const updateTimer = () => {
+            const now = Date.now();
+            const diff = unlockExpiresAt - now;
+            if (diff <= 0) {
+                setTimeLeft('');
                 setHasUnlocked(false);
                 setUnlockExpiresAt(null);
                 if (typeof chrome !== 'undefined' && chrome.storage) {
                     chrome.storage.local.remove(['polyUnlockExpiresAt']);
                 }
+            } else {
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
             }
-        }, 1000);
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
 
         return () => clearInterval(interval);
     }, [hasUnlocked, unlockExpiresAt]);
@@ -232,7 +250,7 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
             setShowAuthModal('login');
             return;
         }
-        if (credits < 1 || isUnlocking) return;
+        if (credits < 1 || isUnlocking || isPremium) return;
 
         setIsUnlocking(true);
         try {
@@ -440,12 +458,20 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                                     {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
                                 </div>
                                 <span style={{ opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</span>
+                                {membershipTier === 'monthly' && <span style={{ fontSize: '10px', background: '#fbbf24', color: '#000', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>PRO</span>}
+                                {membershipTier === 'yearly' && <span style={{ fontSize: '10px', background: '#fbbf24', color: '#000', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>YEARLY</span>}
+                                {hasUnlocked && !isPremium && timeLeft && (
+                                    <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', color: '#fbbf24', fontWeight: 'bold' }}>
+                                        {timeLeft}
+                                    </span>
+                                )}
                                 <button
                                     onClick={() => {
                                         import('../../core/supabase').then(({ supabase }) => supabase.auth.signOut());
                                         setIsAuthenticated(false);
                                         setHasUnlocked(false);
                                         setUserEmail('');
+                                        setMembershipTier('free');
                                     }}
                                     style={{ background: 'transparent', border: 'none', color: contrast.secondary, cursor: 'pointer', marginLeft: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     title="Log Out"
@@ -454,9 +480,11 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                                 </button>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-                                    🪙 {credits} Credits
-                                </div>
+                                {!isPremium && (
+                                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                                        🪙 {credits} Credits
+                                    </div>
+                                )}
                             </div>
                         </>
                     ) : (
@@ -516,7 +544,44 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                         </button>
                     )}
 
-                    <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.8, lineHeight: '1.5' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', borderTop: `1px solid ${contrast.secondary}`, paddingTop: '16px', borderBottom: `1px solid ${contrast.secondary}`, paddingBottom: '8px' }}>Membership & Payments</h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '14px' }}>Current Tier:</span>
+                            <span style={{ fontWeight: 'bold', color: '#fbbf24', textTransform: 'uppercase' }}>{membershipTier}</span>
+                        </div>
+
+                        {!isPremium && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '14px' }}>Available Credits:</span>
+                                <span style={{ fontWeight: 'bold' }}>{credits}</span>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <button
+                                onClick={() => {
+                                    if (typeof chrome !== 'undefined') chrome.tabs.create({ url: 'https://polymarket-baccarat.com/upgrade' });
+                                }}
+                                style={{ flex: 1, background: '#fbbf24', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                            >
+                                Upgrade to PRO
+                            </button>
+                            {!isPremium && (
+                                <button
+                                    onClick={() => {
+                                        if (typeof chrome !== 'undefined') chrome.tabs.create({ url: 'https://polymarket-baccarat.com/buy-credits' });
+                                    }}
+                                    style={{ flex: 1, background: contrast.secondary, color: contrast.inversePrimary, border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                                >
+                                    Buy Credits
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.8, lineHeight: '1.5', borderTop: `1px solid ${contrast.secondary}`, paddingTop: '16px' }}>
                         <strong>How to read Baccarat:</strong><br />
                         Solid {labels[0] || 'Up'} = {labels[0] || 'Up'} streak.<br />
                         Solid {labels[1] || 'Down'} = {labels[1] || 'Down'} streak.<br />
@@ -545,8 +610,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                                     board={stats.beadPlate}
                                     labels={labels}
                                     maxCols={isExpanded ? 30 : 6}
-                                    hasUnlocked={hasUnlocked}
-                                    onUnlockRequest={handleUnlock}
+                                    hasUnlocked={hasUnlocked || isPremium}
+                                    onUnlockRequest={!isPremium ? handleUnlock : undefined}
                                     isUnlocking={isUnlocking}
                                 />
                                 <BigRoad board={stats.bigRoad} labels={labels} maxCols={isExpanded ? 30 : 6} />

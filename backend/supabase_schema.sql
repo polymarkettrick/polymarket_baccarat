@@ -2,7 +2,10 @@
 CREATE TABLE public.user_profiles (
   id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   credits integer NOT NULL DEFAULT 10,
-  last_login_date date NOT NULL DEFAULT CURRENT_DATE,
+  membership_tier varchar NOT NULL DEFAULT 'free',
+  membership_expires_at timestamptz,
+  last_credit_reset_at timestamptz DEFAULT now(),
+  contact_email varchar,
   CONSTRAINT user_profiles_pkey PRIMARY KEY (id)
 );
 
@@ -18,8 +21,8 @@ CREATE POLICY "Users can view own profile"
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.user_profiles (id, credits, last_login_date)
-  VALUES (new.id, 10, CURRENT_DATE);
+  INSERT INTO public.user_profiles (id, credits, contact_email)
+  VALUES (new.id, 10, new.email);
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -33,15 +36,24 @@ CREATE OR REPLACE FUNCTION claim_daily_credits()
 RETURNS public.user_profiles AS $$
 DECLARE
   profile_record public.user_profiles;
+  now_utc timestamp := now() AT TIME ZONE 'UTC';
+  current_boundary timestamp;
 BEGIN
   -- First, get the current profile
   SELECT * INTO profile_record FROM public.user_profiles WHERE id = auth.uid();
   
-  -- Check if they logged in on a different day than their last record
-  IF profile_record.last_login_date < CURRENT_DATE THEN
-    -- If so, strictly reset their credits to 10 and update the date.
+  -- Calculate the most recent 12:00 GMT boundary
+  IF extract(hour from now_utc) >= 12 THEN
+    current_boundary := date(now_utc) + time '12:00:00';
+  ELSE
+    current_boundary := date(now_utc) - interval '1 day' + time '12:00:00';
+  END IF;
+
+  -- Check if they logged in before this current boundary
+  IF profile_record.last_credit_reset_at IS NULL OR profile_record.last_credit_reset_at < current_boundary THEN
+    -- If so, strictly reset their credits to 10 and update the timestamp.
     UPDATE public.user_profiles 
-    SET credits = 10, last_login_date = CURRENT_DATE 
+    SET credits = 10, last_credit_reset_at = now()
     WHERE id = auth.uid()
     RETURNING * INTO profile_record;
   END IF;
