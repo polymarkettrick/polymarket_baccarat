@@ -234,9 +234,6 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
         }
         if (credits < 1 || isUnlocking) return;
 
-        const isConfirmed = window.confirm("Unlock 50 historical periods for this event?\n\nThis will deduct 1 Credit from your account. The board will remain unlocked for 15 minutes.");
-        if (!isConfirmed) return;
-
         setIsUnlocking(true);
         try {
             const { supabase } = await import('../../core/supabase');
