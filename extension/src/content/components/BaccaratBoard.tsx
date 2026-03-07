@@ -349,13 +349,13 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 onMouseDown={handleMouseDown}
                 style={{ cursor: layoutMode === 'floating' ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
             >
-                <div className="header-title" onClick={(e) => { e.stopPropagation(); setMinimized(!minimized); }} style={{ cursor: 'pointer' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="header-title" onClick={(e) => { e.stopPropagation(); setMinimized(!minimized); }} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1, minWidth: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginRight: '4px' }}>
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                     </svg>
-                    Trend Analysis
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Trend Analysis</span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                     <button className="btn-icon" onClick={() => setShowSettings(!showSettings)} title="Open Appearance Settings">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     </button>
@@ -396,11 +396,11 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                 <div style={{ padding: '8px 16px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {isAuthenticated ? (
                         <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: contrast.primary, fontSize: '12px' }}>
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--blue-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: contrast.primary, fontSize: '12px', flex: 1, minWidth: 0 }}>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--blue-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', flexShrink: 0 }}>
                                     {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
                                 </div>
-                                <span style={{ opacity: 0.9 }}>{userEmail}</span>
+                                <span style={{ opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userEmail}</span>
                                 <button
                                     onClick={() => {
                                         import('../../core/supabase').then(({ supabase }) => supabase.auth.signOut());
@@ -414,8 +414,8 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ loading, error, history, t
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                                 </button>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
                                     🪙 {credits} Credits
                                 </div>
                                 {!hasUnlocked && (
