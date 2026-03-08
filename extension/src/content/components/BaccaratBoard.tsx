@@ -57,9 +57,14 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ eventSlug }) => {
         const fetchMarketData = async () => {
             try {
                 // 1. Fetch Market Metadata to get Series ID and Labels
-                const marketRes = await fetch(`https://gamma-api.polymarket.com/events/${eventSlug}`);
+                const marketRes = await fetch(`https://gamma-api.polymarket.com/events?slug=${eventSlug}`);
                 if (!marketRes.ok) throw new Error("Failed to fetch event data.");
-                const eventData = await marketRes.json();
+                const eventArray = await marketRes.json();
+
+                if (!Array.isArray(eventArray) || eventArray.length === 0) {
+                    throw new Error("Event not found on Polymarket.");
+                }
+                const eventData = eventArray[0];
 
                 const markets = eventData.markets || [];
                 if (markets.length === 0) throw new Error("No markets found for this event.");
