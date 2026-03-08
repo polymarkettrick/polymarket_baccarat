@@ -1,17 +1,23 @@
--- Create the user_profiles table to store credits
-CREATE TABLE public.user_profiles (
+-- Create the user_profiles table if it doesn't already exist
+CREATE TABLE IF NOT EXISTS public.user_profiles (
   id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   credits integer NOT NULL DEFAULT 10,
-  membership_tier varchar NOT NULL DEFAULT 'free',
-  membership_expires_at timestamptz,
-  last_credit_reset_at timestamptz DEFAULT now(),
-  contact_email varchar,
+  -- If you already created this table in an earlier phase, running CREATE TABLE again fails. 
+  -- The following columns will be added below safely via ALTER TABLE.
   CONSTRAINT user_profiles_pkey PRIMARY KEY (id)
 );
+
+-- Safely add the new Membership & Timeout columns if they don't exist yet
+ALTER TABLE public.user_profiles 
+  ADD COLUMN IF NOT EXISTS membership_tier varchar NOT NULL DEFAULT 'free',
+  ADD COLUMN IF NOT EXISTS membership_expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_credit_reset_at timestamptz DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS contact_email varchar;
 
 -- Enable Row Level Security (RLS) so users can securely query their own profile from the Chrome Extension
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own profile" ON public.user_profiles;
 CREATE POLICY "Users can view own profile" 
   ON public.user_profiles 
   FOR SELECT 
@@ -27,6 +33,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
