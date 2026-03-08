@@ -56,46 +56,29 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ eventSlug }) => {
 
         const fetchMarketData = async () => {
             try {
-                // 1. Fetch Market Metadata to get Series ID and Labels
-                const marketRes = await fetch(`https://gamma-api.polymarket.com/events?slug=${eventSlug}`);
-                if (!marketRes.ok) throw new Error("Failed to fetch event data.");
-                const eventArray = await marketRes.json();
+                // Fetch unified Baccarat History Payload from our secure Backend Proxy
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+                const marketRes = await fetch(`${apiUrl}/api/market-history?slug=${eventSlug}`);
+                if (!marketRes.ok) throw new Error("Failed to fetch event data from backend.");
 
-                if (!Array.isArray(eventArray) || eventArray.length === 0) {
-                    throw new Error("Event not found on Polymarket.");
-                }
-                const eventData = eventArray[0];
-
-                const markets = eventData.markets || [];
-                if (markets.length === 0) throw new Error("No markets found for this event.");
-
-                // Assuming we track the main/first market of the event
-                const mainMarket = markets[0];
-                const newSeriesId = mainMarket.groupItemTitle || mainMarket.seriesId || null;
-
-                try {
-                    const parsedLabels = JSON.parse(mainMarket.outcomes);
-                    if (isMounted && Array.isArray(parsedLabels) && parsedLabels.length >= 2) {
-                        setLabels(parsedLabels);
-                        // Future implementation: if mainMarket provides a closing time/duration, map it to setTimeframe(...)
-                        console.log("Loaded API market:", newSeriesId); // Suppress lint
-                    }
-                } catch {
-                    if (isMounted) setLabels(['Yes', 'No']); // Fallback
-                }
+                const responsePayload = await marketRes.json();
 
                 if (isMounted) {
-                    // Simulate API network latency
-                    await new Promise(r => setTimeout(r, 800));
+                    if (responsePayload.labels) setLabels(responsePayload.labels);
 
-                    // Generate deterministic fake data based on slug length for testing UI
-                    const fakeData = Array.from({ length: 60 }, (_, i) =>
-                        (eventSlug.length + i) % 2 === 0 ? 1 : 0
-                    );
-                    setHistory(fakeData);
+                    // The payload returns { data: [{ resolutionId, outcome, resolvedAt }] }
+                    if (responsePayload.data && Array.isArray(responsePayload.data)) {
+                        // Map outcomes into [1, 0] format, reversing so oldest is first (standard Baccarat L-to-R render)
+                        const historyArray = responsePayload.data.map((d: any) =>
+                            (d.outcome === "1" || d.outcome === 1 || d.outcome === "Yes") ? 1 : 0
+                        );
+                        setHistory(historyArray.reverse());
+                    } else {
+                        setHistory([]);
+                    }
+
                     setLoading(false);
                 }
-
             } catch (err) {
                 if (isMounted) {
                     setError(err instanceof Error ? err.message : "Failed to load market data.");
@@ -225,17 +208,12 @@ export const BaccaratBoard: React.FC<BoardProps> = ({ eventSlug }) => {
         import('../../core/supabase').then(({ supabase }) => {
             const fetchCredits = async () => {
                 try {
-                    const { data, error } = await supabase.rpc('claim_daily_credits');
-                    if (data && mounted) {
-                        setCredits(data.credits);
-                        setMembershipTier(data.membership_tier || 'free');
-                    } else if (error) {
-                        const { data: profile } = await supabase.from('user_profiles').select('credits, membership_tier').single();
-                        if (profile && mounted) {
-                            setCredits(profile.credits);
-                            setMembershipTier(profile.membership_tier || 'free');
-                        }
+                    const { data: profile, error } = await supabase.from('user_profiles').select('credits, membership_tier').single();
+                    if (profile && mounted) {
+                        setCredits(profile.credits);
+                        setMembershipTier(profile.membership_tier || 'free');
                     }
+                    if (error) console.error("Profile fetch error", error);
                 } catch (e) { console.error("Credit fetch error", e); }
             };
 

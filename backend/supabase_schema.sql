@@ -38,33 +38,15 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- RPC Function: Extension calls this every time it boots to check for the Daily 10 Credit Reset
-CREATE OR REPLACE FUNCTION claim_daily_credits()
-RETURNS public.user_profiles AS $$
-DECLARE
-  profile_record public.user_profiles;
-  now_utc timestamp := now() AT TIME ZONE 'UTC';
-  current_boundary timestamp;
-BEGIN
-  -- First, get the current profile
-  SELECT * INTO profile_record FROM public.user_profiles WHERE id = auth.uid();
-  
-  -- Calculate the most recent 12:00 GMT boundary
-  IF extract(hour from now_utc) >= 12 THEN
-    current_boundary := date(now_utc) + time '12:00:00';
-  ELSE
-    current_boundary := date(now_utc) - interval '1 day' + time '12:00:00';
-  END IF;
+-- Enable pg_cron for 12:00 GMT daily reset
+CREATE EXTENSION IF NOT EXISTS pg_cron;
 
-  -- Check if they logged in before this current boundary
-  IF profile_record.last_credit_reset_at IS NULL OR profile_record.last_credit_reset_at < current_boundary THEN
-    -- If so, strictly reset their credits to 10 and update the timestamp.
-    UPDATE public.user_profiles 
-    SET credits = 10, last_credit_reset_at = now()
-    WHERE id = auth.uid()
-    RETURNING * INTO profile_record;
-  END IF;
-  
-  RETURN profile_record;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Remove the old client-side RPC function which caused race-conditions
+DROP FUNCTION IF EXISTS claim_daily_credits();
+
+-- Create the pg_cron job to safely execute exactly at 12:00 GMT every day
+SELECT cron.schedule(
+  'reset_free_credits_gmt', 
+  '0 12 * * *', 
+  $$ UPDATE public.user_profiles SET credits = 10, last_credit_reset_at = now() WHERE membership_tier = 'free' $$
+);

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { IMarket, IResolution } from '../../../../packages/shared/src/types';
+import { IMarket, IResolution } from '../../../packages/shared/src/types';
 
 const GAMMA_API_BASE = 'https://gamma-api.polymarket.com';
 

@@ -1,13 +1,50 @@
 import { redisClient } from '../config/redis';
 import { supabaseAdmin } from '../config/supabase';
 import { fetchPolymarketSeries } from './polymarket.service';
-import { BaccaratHistoryResponse } from '../../../../packages/shared/src/types';
+import { BaccaratHistoryResponse } from '../../../packages/shared/src/types';
+
+export async function resolveSlugToSeriesId(slug: string): Promise<string> {
+    const slugCacheKey = `slug:${slug}`;
+    if (redisClient.isOpen) {
+        const cachedSeriesId = await redisClient.get(slugCacheKey);
+        if (cachedSeriesId) return cachedSeriesId;
+    }
+
+    const res = await fetch(`https://gamma-api.polymarket.com/events?slug=${slug}`);
+    if (!res.ok) throw new Error("Failed to fetch event data from Polymarket API.");
+    const data = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("Event not found on Polymarket.");
+    }
+
+    // We get the first market inside the event to grab the series metadata
+    const mainMarket = data[0].markets?.[0];
+    if (!mainMarket) throw new Error("No markets found for this event.");
+
+    const seriesId = mainMarket.groupItemTitle || mainMarket.seriesId || data[0].seriesSlug;
+    if (!seriesId) throw new Error("Could not resolve seriesId from the event data.");
+
+    if (redisClient.isOpen) {
+        // Cache this slug -> seriesId mapping for 24 hours to deeply minimize API calls
+        await redisClient.setEx(slugCacheKey, 86400, seriesId);
+    }
+
+    return seriesId;
+}
 
 export async function getMarketHistory(
-    seriesId: string,
+    identifier: string,
+    isSlug: boolean,
     userTier: 'free' | 'premium'
 ): Promise<BaccaratHistoryResponse> {
     const limit = userTier === 'premium' ? 50 : 10;
+
+    // Resolve slug if needed
+    let seriesId = identifier;
+    if (isSlug) {
+        seriesId = await resolveSlugToSeriesId(identifier);
+    }
 
     // 1. Check Redis Cache
     const cacheKey = `history:${seriesId}`;
